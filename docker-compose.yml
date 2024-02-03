@@ -1,0 +1,54 @@
+version: '3'
+services:
+  react:
+    build:
+      context: .
+      dockerfile: ./docker/react/Dockerfile
+    container_name: react_container
+    tty: true
+    volumes:
+      - ./front:/app/react
+    command: sh -c "cd ./front && yarn start"
+    ports:
+      - 3000:3000
+  go:
+    build:
+      context: .
+      dockerfile: ./docker/golang/Dockerfile
+    container_name: go_container
+    ports:
+      - 8000:8000
+    tty: true   
+  mysql:
+    image: mysql:8.0.27
+    build:
+      context: .
+      dockerfile: ./docker/mysql/Dockerfile
+    container_name: mysql_container
+    environment:
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: mysql
+      TZ: 'Asia/Tokyo'
+    volumes:
+      - ./docker/mysql/initdb.d:/docker-entrypoint-initdb.d
+      - ./docker/mysql/conf.d:/etc/mysql/conf.d
+      - ./docker/mysql/mysql_data:/var/lib/mysql
+    ports:
+    - 3306:3306
+    links:
+      - go
+  phpmyadmin:
+    image: phpmyadmin
+    container_name: phpmyadmin_container
+    depends_on:
+      - mysql
+    environment:
+      - PMA_ARBITRARY=1
+      - PMA_HOSTS=mysql
+      - PMA_USER=root
+      - PMA_PASSWORD=mysql
+    ports:
+      - "3001:80"
+    volumes:
+      - ./docker/phpmyadmin/sessions:/sessions
